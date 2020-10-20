@@ -1,0 +1,117 @@
+// Getting the initial variables we'll use throughout the function. DealRecord, DealName, Deal Amount, Owner ID, Financial Planner ID, etc.
+//
+dealRecord = zoho.crm.getRecordById("Deals",DEAL_ID);
+// Getting the DealRecord so we don't have to add a bunch of arguments.
+dealName = dealRecord.get("Deal_Name");
+info dealName;
+dealAmount = dealRecord.get("Amount");
+info dealAmount;
+ownerId = dealRecord.get("Owner").get("id");
+ownerName = dealRecord.get("Owner").get("name");
+info ownerId;
+financialPlanningAdvisorId = dealRecord.get("Financial_Planning_Advisor").get("id");
+financialPlanningAdvisorName = dealRecord.get("Financial_Planning_Advisor").get("name");
+//
+// If the Deal Amount is over $20,000, we want to change up the commission rate. 
+//
+if(dealAmount > 20000)
+{
+	commissionRate = .075;
+}
+else
+{
+	commissionRate = .05;
+}
+info "Commission Rate: " + commissionRate;
+// 
+// Calculating the commission rate
+//
+commissionAmount = dealAmount * commissionRate;
+info "Commission Amount: " + commissionAmount;
+//
+// Putting together our Commission Map for the commissions we'll create later in our function. We don't add the "Owner" of the commission, because that will be defined later in a "For Each" loop
+//
+commissionMap = Map();
+commissionMap.put("Commission_Amount",commissionAmount);
+commissionMap.put("Related_Deal",DEAL_ID);
+commissionMap.put("Name",dealName + " Commission");
+//
+// Populating the list of User IDs that we generated in the first section — we'll use this list as part of our For Each loop later in the function.
+//
+userIdList = list();
+userIdList.add(ownerId);
+userIdList.add(financialPlanningAdvisorId);
+commissionList = list();
+//
+// Iterating through every User ID in our list to create functions for each.
+//
+for each  userId in userIdList
+{
+	commissionMap.put("Owner",userId);
+	createCommission = zoho.crm.createRecord("Commissions",commissionMap);
+	commissionList.add(createCommission);
+}
+info commissionList;
+//
+// Filtering through our list of created commissions to see if any commissions are over $5,000 — if they are, we can create a task to congratulate the salesperson, send an automated email, etc. We don't actually perform any action with the next 15 lines of code. It's there just as a demo of IF/FOR EACH statements
+//
+for each  commission in commissionList
+{
+	commissionId = commission.get("id");
+	commissionRecord = zoho.crm.getRecordById("Commissions",commissionId);
+	commissionAmount = commissionRecord.get("Commission_Amount");
+	info commissionAmount;
+	if(commissionAmount > 5000)
+	{
+		yarg = 10;
+	}
+	else
+	{
+		yarg = 5;
+	}
+}
+info "Yarg — if Yarg is 10, the Commission is over 5000, if Yarg is 5 the commission is under 5000:  " + yarg;
+//
+//Every command in Books requires the Organization ID. What follows is the API call for getting the Org ID
+//
+getOrganizations = invokeurl
+[
+	url :"https://books.zoho.com/api/v3/organizations"
+	type :GET
+	connection:"zohobooks"
+];
+info getOrganizations;
+orgId = getOrganizations.get("organizations").get(0).get("organization_id");
+info "Org ID: " + orgId;
+//
+// We search Books for Customers whose Name matches the "Account Name" from the Deal record
+//
+accountName = dealRecord.get("Account_Name").get("name");
+info "Account Name: " + accountName;
+searchParam = {"contact_name":accountName};
+customerRecord = zoho.books.getRecords("Contacts",orgId,searchParam).get("contacts");
+//
+//If we find a Customer record, get the ID for creating the invoice later. If not, we create a Customer record and then get its ID (using the same variable)
+//
+if(!customerRecord.isEmpty())
+{
+	customer = customerRecord.get("0");
+	customerId = customer.get("contact_id");
+}
+else
+{
+	newCustomerMap = Map();
+	newCustomerMap.put("contact_name",accountName);
+	createCustomer = zoho.books.createRecord("Contacts",orgId,newCustomerMap);
+	customer = createCustomer.get("contact");
+	customerId = customer.get("contact_id");
+}
+//Now we create the invoice map, add all the right fields, line item details, and create the Invoice!
+//
+today = zoho.currentdate;
+invoice = Map();
+invoice.put("customer_id",customerId);
+invoice.put("date",today);
+invoice.put("line_items",{{"item_id":"2342210000000373001","quantity":"1","rate":dealAmount}});
+createInvoice = zoho.books.createRecord("invoices",orgId,invoice);
+info "Invoice Record: " + createInvoice;
