@@ -89,7 +89,7 @@ info "Org ID: " + orgId;
 accountName = dealRecord.get("Account_Name").get("name");
 info "Account Name: " + accountName;
 searchParam = {"contact_name":accountName};
-customerRecord = zoho.books.getRecords("Contacts",orgId,searchParam).get("contacts");
+customerRecord = zoho.books.getRecords("Contacts",orgId,searchParam, "zohobooks").get("contacts");
 //
 //If we find a Customer record, get the ID for creating the invoice later. If not, we create a Customer record and then get its ID (using the same variable)
 //
