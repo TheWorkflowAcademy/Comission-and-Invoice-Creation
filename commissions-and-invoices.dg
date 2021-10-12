@@ -102,7 +102,7 @@ else
 {
 	newCustomerMap = Map();
 	newCustomerMap.put("contact_name",accountName);
-	createCustomer = zoho.books.createRecord("Contacts",orgId,newCustomerMap);
+	createCustomer = zoho.books.createRecord("Contacts", orgId, newCustomerMap, "zohobooks");
 	customer = createCustomer.get("contact");
 	customerId = customer.get("contact_id");
 }
@@ -113,5 +113,5 @@ invoice = Map();
 invoice.put("customer_id",customerId);
 invoice.put("date",today);
 invoice.put("line_items",{{"item_id":"2342210000000373001","quantity":"1","rate":dealAmount}});
-createInvoice = zoho.books.createRecord("invoices",orgId,invoice);
+createInvoice = zoho.books.createRecord("invoices", orgId, invoice, "zohobooks");
 info "Invoice Record: " + createInvoice;
